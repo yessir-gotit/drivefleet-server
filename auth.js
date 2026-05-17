@@ -3,7 +3,7 @@ const { MongoClient } = require("mongodb");
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
-const client = new MongoClient(process.env.MONGO_URI);
+const client = new MongoClient(process.env.MONGODB_URI);
 const db = client.db("drivefleetDB");
 
 export const auth = betterAuth({
