@@ -3,7 +3,7 @@ const { MongoClient } = require("mongodb");
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
-const client = new MongoClient(process.env.MONGODB_URI);
+const client = new MongoClient(process.env.MONGO_URI);
 const db = client.db("drivefleetDB");
 
 export const auth = betterAuth({
@@ -11,6 +11,11 @@ export const auth = betterAuth({
         db: db,
         type: "mongodb"
     },
+
+    trustedOrigins: [
+        "http://localhost:3000", 
+        process.env.FRONTEND_PRODUCTION_URL
+    ],
     emailAndPassword: {
         enabled: true,
         autoSignIn: true
