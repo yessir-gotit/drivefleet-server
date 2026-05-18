@@ -14,7 +14,11 @@ app.use(cors({
 
 
 app.all("/api/auth/*splat", toNodeHandler(auth));
+
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.get('/', (req, res) => {
     res.send('DriveFleet server running alongside Better Auth framework');
 });
