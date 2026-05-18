@@ -11,10 +11,10 @@ app.use(cors({
     origin: ['http://localhost:3000'], 
     credentials: true
 }));
+
+
+app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use(express.json());
-
-app.all("/api/auth/*", toNodeHandler(auth));
-
 app.get('/', (req, res) => {
     res.send('DriveFleet server running alongside Better Auth framework');
 });
