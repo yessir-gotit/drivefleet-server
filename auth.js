@@ -29,4 +29,4 @@ const auth = betterAuth({
   },
 });
 
-module.exports = { auth };
+module.exports = { auth, db };
