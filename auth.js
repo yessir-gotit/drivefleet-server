@@ -7,13 +7,15 @@ require("dotenv").config({ path: path.resolve(__dirname, ".env") });
 const client = new MongoClient(process.env.MONGODB_URI);
 const db = client.db("drivefleetDB");
 
+const FRONTEND_URL = process.env.FRONTEND_PRODUCTION_URL || "http://localhost:3000";
+
 const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
   database: mongodbAdapter(db, { client }),
 
   trustedOrigins: [
     "http://localhost:3000",
-    process.env.FRONTEND_PRODUCTION_URL,
+    FRONTEND_URL,
   ].filter(Boolean),
 
   emailAndPassword: {
@@ -25,10 +27,13 @@ const auth = betterAuth({
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+     
+      redirectURI: `${process.env.BETTER_AUTH_URL}/api/auth/callback/google`,
     },
   },
 
   advanced: {
+    useSecureCookies: true,
     crossSubdomainCookies: {
       enabled: false,
     },
@@ -36,9 +41,8 @@ const auth = betterAuth({
       sameSite: "none",
       secure: true,
       httpOnly: true,
+   
     },
-    // ✅ use cookies for state, not database
-    useSecureCookies: true,
   },
 });
 
