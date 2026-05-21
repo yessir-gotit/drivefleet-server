@@ -10,6 +10,11 @@ const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
   database: mongodbAdapter(db, { client }),
 
+  account: {
+ 
+    storeStateStrategy: "cookie",
+  },
+
   trustedOrigins: [
     "http://localhost:3000",
     process.env.FRONTEND_PRODUCTION_URL,
