@@ -1,8 +1,8 @@
-const { Router } = require("express");
-const { ObjectId } = require("mongodb");
-const { requireAuth } = require("../auth");
+import { Router } from "express";
+import { ObjectId } from "mongodb";
+import { requireAuth } from "../auth.js";
 
-module.exports = function (db) {
+export default function (db) {
   const router = Router();
 
   router.post("/", requireAuth, async (req, res) => {
@@ -51,7 +51,7 @@ module.exports = function (db) {
 
       const result = await db.collection("bookings").insertOne(booking);
 
-      // Increment booking counter ()
+      // Increment booking counter
       await db
         .collection("cars")
         .updateOne({ _id: new ObjectId(carId) }, { $inc: { bookedCount: 1 } });
@@ -112,7 +112,6 @@ module.exports = function (db) {
     }
   });
 
- 
   router.get("/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;

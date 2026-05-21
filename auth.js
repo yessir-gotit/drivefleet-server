@@ -1,11 +1,10 @@
-const { betterAuth } = require("better-auth");
-const { mongodbAdapter } = require("better-auth/adapters/mongodb");
-const { MongoClient } = require("mongodb");
+import { betterAuth } from "better-auth";
+import { mongodbAdapter } from "better-auth/adapters/mongodb";
+import { MongoClient } from "mongodb";
+import { waitUntil } from "@vercel/functions";
 
-const client = new MongoClient(process.env.MONGODB_URI);
+const client = new MongoClient(process.env.DATABASE_URL);
 const db = client.db();
-
-const { waitUntil } = require("@vercel/functions");
 
 const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
@@ -57,4 +56,4 @@ async function requireAuth(req, res, next) {
   }
 }
 
-module.exports = { auth, db, requireAuth };
+export { auth, db, requireAuth };

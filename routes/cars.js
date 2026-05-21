@@ -1,10 +1,9 @@
-const { Router } = require("express");
-const { ObjectId } = require("mongodb");
-const { requireAuth } = require("../auth");
+import { Router } from "express";
+import { ObjectId } from "mongodb";
+import { requireAuth } from "../auth.js";
 
-module.exports = function (db) {
+export default function (db) {
   const router = Router();
-
 
   router.get("/user/:uid", async (req, res) => {
     try {
@@ -33,7 +32,6 @@ module.exports = function (db) {
         .json({ error: "Internal server error. Could not fetch user cars." });
     }
   });
-
 
   router.get("/", async (req, res) => {
     try {
@@ -73,7 +71,6 @@ module.exports = function (db) {
     }
   });
 
-
   router.get("/:id", async (req, res) => {
     try {
       const { id } = req.params;
@@ -101,7 +98,6 @@ module.exports = function (db) {
         .json({ error: "Internal server error. Could not fetch car." });
     }
   });
-
 
   router.post("/", requireAuth, async (req, res) => {
     try {
@@ -220,7 +216,6 @@ module.exports = function (db) {
     }
   });
 
-  
   router.delete("/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
