@@ -29,6 +29,7 @@ const auth = betterAuth({
   },
   account: {
     storeStateStrategy: "database",
+    skipStateCookieCheck: true,
   },
   advanced: {
     crossSubDomainCookies: {
