@@ -28,10 +28,6 @@ const auth = betterAuth({
     },
   },
 
-  account: {
-    storeStateStrategy: "database",
-  },
-
   advanced: {
     crossSubdomainCookies: {
       enabled: false,
@@ -41,6 +37,8 @@ const auth = betterAuth({
       secure: true,
       httpOnly: true,
     },
+    // ✅ use cookies for state, not database
+    useSecureCookies: true,
   },
 });
 
