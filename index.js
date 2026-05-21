@@ -8,7 +8,6 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-
 function splitCookiesString(setCookieHeader) {
   if (!setCookieHeader) return [];
   if (Array.isArray(setCookieHeader)) return setCookieHeader;
@@ -39,17 +38,31 @@ app.use(
 app.use(cookieParser());
 
 app.get("/api/auth/callback/{*any}", async (req, res) => {
-  const proto = req.headers["x-forwarded-proto"] || (req.socket.encrypted ? "https" : "http");
+  const proto =
+    req.headers["x-forwarded-proto"] ||
+    (req.socket.encrypted ? "https" : "http");
   const base = `${proto}://${req.headers.host}`;
 
-  const response = await auth.handler(new Request(`${base}${req.originalUrl}`, {
-    method: req.method,
-    headers: req.headers,
-  }));
+  const response = await auth.handler(
+    new Request(`${base}${req.originalUrl}`, {
+      method: req.method,
+      headers: req.headers,
+    }),
+  );
 
   if (response.status === 302) {
     const location = response.headers.get("location");
+    console.log(`[AUTH] callback status=302 location=${location}`);
 
+    // Log each individual set-cookie header BEFORE any parsing
+    let i = 0;
+    for (const [key, value] of response.headers) {
+      if (key === "set-cookie") {
+        console.log(`[AUTH] raw-cookie[${i++}]: ${value.substring(0, 200)}`);
+      }
+    }
+
+    // Forward cookies
     const setCookieHeader = response.headers.get("set-cookie");
     if (setCookieHeader) {
       const cookies = splitCookiesString(setCookieHeader);
@@ -70,17 +83,22 @@ app.get("/api/auth/callback/{*any}", async (req, res) => {
 </body>
 </html>`);
   } else {
+    console.log(`[AUTH] callback status=${response.status} (non-302)`);
     for (const [key, value] of response.headers) {
-      res.setHeader(key, key === "set-cookie" ? splitCookiesString(value) : value);
+      res.setHeader(
+        key,
+        key === "set-cookie" ? splitCookiesString(value) : value,
+      );
     }
     res.status(response.status);
     if (response.body) {
       const reader = response.body.getReader();
-      const pump = () => reader.read().then(({ done, value }) => {
-        if (done) return res.end();
-        res.write(value);
-        pump();
-      });
+      const pump = () =>
+        reader.read().then(({ done, value }) => {
+          if (done) return res.end();
+          res.write(value);
+          pump();
+        });
       pump();
     } else {
       res.end();
@@ -88,12 +106,10 @@ app.get("/api/auth/callback/{*any}", async (req, res) => {
   }
 });
 
-
 app.all("/api/auth/{*any}", toNodeHandler(auth));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 
 app.get("/", (req, res) => {
   res.send("DriveFleet server running alongside Better Auth framework");
@@ -101,7 +117,6 @@ app.get("/", (req, res) => {
 
 app.use("/api/cars", require("./routes/cars")(db));
 app.use("/api/bookings", require("./routes/bookings")(db));
-
 
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
