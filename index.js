@@ -1,13 +1,31 @@
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const { auth, db } = require("./auth");
 const { toNodeHandler } = require("better-auth/node");
-const { splitCookiesString } = require("set-cookie-parser");
 require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+
+function splitCookiesString(setCookieHeader) {
+  if (!setCookieHeader) return [];
+  if (Array.isArray(setCookieHeader)) return setCookieHeader;
+
+  const cookies = [];
+  let start = 0;
+  for (let i = 0; i < setCookieHeader.length; i++) {
+    if (setCookieHeader[i] === ",") {
+      const part = setCookieHeader.substring(start, i).trim();
+      if (part) cookies.push(part);
+      start = i + 1;
+    }
+  }
+  const last = setCookieHeader.substring(start).trim();
+  if (last) cookies.push(last);
+  return cookies;
+}
 
 app.use(
   cors({
@@ -18,14 +36,13 @@ app.use(
     credentials: true,
   }),
 );
+app.use(cookieParser());
 
-// Custom OAuth callback handler — returns 200 with cookies + HTML redirect
-// instead of a 302 redirect, so browsers (Safari, Chrome ITP) store session cookies.
 app.get("/api/auth/callback/{*any}", async (req, res) => {
   const proto = req.headers["x-forwarded-proto"] || (req.socket.encrypted ? "https" : "http");
   const base = `${proto}://${req.headers.host}`;
 
-  // Let better-auth process the callback normally
+
   const response = await auth.handler(new Request(`${base}${req.originalUrl}`, {
     method: req.method,
     headers: req.headers,
@@ -34,7 +51,7 @@ app.get("/api/auth/callback/{*any}", async (req, res) => {
   if (response.status === 302) {
     const location = response.headers.get("location");
 
-    // Copy Set-Cookie headers from better-auth's response
+
     const setCookieHeader = response.headers.get("set-cookie");
     if (setCookieHeader) {
       const cookies = splitCookiesString(setCookieHeader);
@@ -43,7 +60,7 @@ app.get("/api/auth/callback/{*any}", async (req, res) => {
       }
     }
 
-    // Return 200 with HTML auto-redirect — cookies are stored by the browser
+
     res.status(200).send(`<!DOCTYPE html>
 <html>
 <head>
@@ -56,7 +73,6 @@ app.get("/api/auth/callback/{*any}", async (req, res) => {
 </body>
 </html>`);
   } else {
-    // Pass through non-redirect responses as-is
     for (const [key, value] of response.headers) {
       res.setHeader(key, key === "set-cookie" ? splitCookiesString(value) : value);
     }
@@ -75,7 +91,7 @@ app.get("/api/auth/callback/{*any}", async (req, res) => {
   }
 });
 
-// All other /api/auth/* routes handled by better-auth normally
+
 app.all("/api/auth/{*any}", toNodeHandler(auth));
 
 app.use(express.json());
