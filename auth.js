@@ -8,7 +8,6 @@ const client = new MongoClient(process.env.MONGODB_URI);
 const db = client.db("drivefleetDB");
 
 const auth = betterAuth({
-
   database: mongodbAdapter(db, {
     client: client,
   }),
@@ -29,4 +28,19 @@ const auth = betterAuth({
   },
 });
 
-module.exports = { auth, db };
+async function requireAuth(req, res, next) {
+  try {
+    const session = await auth.api.getSession({
+      headers: req.headers,
+    });
+    if (!session) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    req.user = session.user;
+    next();
+  } catch {
+    res.status(401).json({ error: "Unauthorized" });
+  }
+}
+
+module.exports = { auth, db, requireAuth };
