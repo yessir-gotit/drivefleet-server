@@ -8,24 +8,6 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-function splitCookiesString(setCookieHeader) {
-  if (!setCookieHeader) return [];
-  if (Array.isArray(setCookieHeader)) return setCookieHeader;
-
-  const cookies = [];
-  let start = 0;
-  for (let i = 0; i < setCookieHeader.length; i++) {
-    if (setCookieHeader[i] === ",") {
-      const part = setCookieHeader.substring(start, i).trim();
-      if (part) cookies.push(part);
-      start = i + 1;
-    }
-  }
-  const last = setCookieHeader.substring(start).trim();
-  if (last) cookies.push(last);
-  return cookies;
-}
-
 app.use(
   cors({
     origin: [
@@ -37,77 +19,7 @@ app.use(
 );
 app.use(cookieParser());
 
-app.get("/api/auth/callback/{*any}", async (req, res) => {
-  const proto =
-    req.headers["x-forwarded-proto"] ||
-    (req.socket.encrypted ? "https" : "http");
-  const base = `${proto}://${req.headers.host}`;
-
-  const response = await auth.handler(
-    new Request(`${base}${req.originalUrl}`, {
-      method: req.method,
-      headers: req.headers,
-    }),
-  );
-
-  if (response.status === 302) {
-    const location = response.headers.get("location");
-    console.log(`[AUTH] callback status=302 location=${location}`);
-
-    // Log each individual set-cookie header BEFORE any parsing
-    let i = 0;
-    for (const [key, value] of response.headers) {
-      if (key === "set-cookie") {
-        console.log(`[AUTH] raw-cookie[${i++}]: ${value.substring(0, 200)}`);
-      }
-    }
-
-    // Forward cookies
-    const setCookieHeader = response.headers.get("set-cookie");
-    if (setCookieHeader) {
-      const cookies = splitCookiesString(setCookieHeader);
-      for (const cookie of cookies) {
-        res.append("Set-Cookie", cookie);
-      }
-    }
-
-    res.status(200).send(`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Signing in...</title>
-  <meta http-equiv="refresh" content="0;url=${location}">
-</head>
-<body>
-  <script>window.location.href=${JSON.stringify(location)};</script>
-</body>
-</html>`);
-  } else {
-    console.log(`[AUTH] callback status=${response.status} (non-302)`);
-    for (const [key, value] of response.headers) {
-      res.setHeader(
-        key,
-        key === "set-cookie" ? splitCookiesString(value) : value,
-      );
-    }
-    res.status(response.status);
-    if (response.body) {
-      const reader = response.body.getReader();
-      const pump = () =>
-        reader.read().then(({ done, value }) => {
-          if (done) return res.end();
-          res.write(value);
-          pump();
-        });
-      pump();
-    } else {
-      res.end();
-    }
-  }
-});
-
 app.all("/api/auth/{*any}", toNodeHandler(auth));
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
