@@ -19,7 +19,7 @@ app.use(
 );
 app.use(cookieParser());
 
-app.all("/api/auth/{*any}", toNodeHandler(auth));
+app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -29,6 +29,9 @@ app.get("/", (req, res) => {
 
 app.use("/api/cars", require("./routes/cars")(db));
 app.use("/api/bookings", require("./routes/bookings")(db));
+
+// Export for Vercel serverless (app.listen is also kept for local dev)
+module.exports = app;
 
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
