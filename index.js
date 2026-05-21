@@ -42,24 +42,40 @@ app.get("/api/auth/callback/{*any}", async (req, res) => {
   const proto = req.headers["x-forwarded-proto"] || (req.socket.encrypted ? "https" : "http");
   const base = `${proto}://${req.headers.host}`;
 
+  const requestUrl = `${base}${req.originalUrl}`;
+  console.log(`[OAuth Callback] Request URL: ${requestUrl}`);
 
-  const response = await auth.handler(new Request(`${base}${req.originalUrl}`, {
+  const response = await auth.handler(new Request(requestUrl, {
     method: req.method,
     headers: req.headers,
   }));
 
+  console.log(`[OAuth Callback] Response status: ${response.status}`);
+
+  // Log all response headers to see what better-auth returns
+  console.log(`[OAuth Callback] All response headers:`);
+  for (const [key, value] of response.headers) {
+    console.log(`[OAuth Callback]   Header: ${key} = ${value}`);
+  }
+
+  // Log raw set-cookie via .get() to see the joined string
+  const rawSetCookie = response.headers.get("set-cookie");
+  console.log(`[OAuth Callback] Raw set-cookie (via .get()): ${rawSetCookie}`);
+
   if (response.status === 302) {
     const location = response.headers.get("location");
+    console.log(`[OAuth Callback] 302 Location: ${location}`);
 
-
-    const setCookieHeader = response.headers.get("set-cookie");
-    if (setCookieHeader) {
-      const cookies = splitCookiesString(setCookieHeader);
+    if (rawSetCookie) {
+      const cookies = splitCookiesString(rawSetCookie);
+      console.log(`[OAuth Callback] Parsed cookies (${cookies.length}):`);
+      cookies.forEach((c, i) => console.log(`[OAuth Callback]   Cookie[${i}]: ${c}`));
       for (const cookie of cookies) {
         res.append("Set-Cookie", cookie);
       }
+    } else {
+      console.log(`[OAuth Callback] No set-cookie header found in 302 response`);
     }
-
 
     res.status(200).send(`<!DOCTYPE html>
 <html>
@@ -73,8 +89,11 @@ app.get("/api/auth/callback/{*any}", async (req, res) => {
 </body>
 </html>`);
   } else {
+    console.log(`[OAuth Callback] Non-302 response, forwarding headers and body`);
     for (const [key, value] of response.headers) {
-      res.setHeader(key, key === "set-cookie" ? splitCookiesString(value) : value);
+      const processed = key === "set-cookie" ? splitCookiesString(value) : value;
+      console.log(`[OAuth Callback]   Setting header ${key}: ${key === "set-cookie" ? JSON.stringify(processed) : value}`);
+      res.setHeader(key, processed);
     }
     res.status(response.status);
     if (response.body) {
