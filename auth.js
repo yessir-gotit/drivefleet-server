@@ -32,9 +32,6 @@ const auth = betterAuth({
     skipStateCookieCheck: true,
   },
   advanced: {
-    crossSubDomainCookies: {
-      enabled: true,
-    },
     defaultCookieAttributes: {
       sameSite: "none",
       secure: true,
